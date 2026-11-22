@@ -1,4 +1,4 @@
-// The screenshot scenes behind ?shot=play|sneak|smoke|getaway|start|escape|caught.
+// The screenshot scenes behind ?shot=play|sneak|smoke|getaway|start|escape|caught|spotted|vault.
 // Each one plays the real rules forward from a fresh world, steered by a
 // scripted thief that walks a fixed waypoint route (sneaking where the route
 // says so, holding E at the case where it says so, popping smoke or throwing
@@ -14,6 +14,13 @@
 // exit door with the loot secured, one step from the getaway. The old
 // `start`/`escape`/`caught` scenes stay for the in-game screens and for
 // backwards compatibility.
+//
+// v3: two new scenes. `spotted` is the tense frame v2 never had — the thief
+// caught in a sweeping cone, a guard investigating with a "?" overhead, the
+// alarm meter amber and climbing. `vault` is Job 2 (a different room: the
+// vault, three guards, three cameras), where the thief jams the vault camera
+// and picks the Golden Idol under its dark cone. The four submitted v3
+// screenshots are play (cover), spotted, vault and getaway.
 import { STEP } from './config.js';
 import { SCREEN_CAUGHT, SCREEN_CLEAR, SCREEN_PLAY, SCREEN_TITLE } from './render.js';
 
@@ -36,21 +43,24 @@ function idleInput() {
 
 /**
  * Walk `route` (waypoints, each {x, y, sneak}; a waypoint may also carry
- * `smoke: true` to pop a smoke bomb on arrival, or `coin: {x, y}` to throw a
- * coin there) and then hold still; returns when the time runs out or the run ends.
+ * `smoke: true` to pop a smoke bomb on arrival, `jam: true` to jam the
+ * nearest camera on arrival, or `coin: {x, y}` to throw a coin there) and
+ * then hold still; returns when the time runs out or the run ends.
  */
 function walkRoute(world, route, seconds) {
   let index = 0;
   let pendingSmoke = false;
+  let pendingJam = false;
   let pendingCoin = null;
   for (let step = 0; step < seconds / STEP; step += 1) {
     if (world.state.status !== 'playing') break;
     // The route is done: spend one last step on any tool the final waypoint
     // asked for, then stop — standing around in the open gets a thief caught.
     if (index >= route.length) {
-      if (pendingSmoke || pendingCoin) {
+      if (pendingSmoke || pendingJam || pendingCoin) {
         const last = { dx: 0, dy: 0, sneak: false, run: false, interact: false };
         if (pendingSmoke) last.smoke = true;
+        if (pendingJam) last.jam = true;
         if (pendingCoin) last.coinTarget = pendingCoin;
         world.step(STEP, last, false);
       }
@@ -63,6 +73,7 @@ function walkRoute(world, route, seconds) {
       if (steered.done) {
         index += 1;
         if (point.smoke) pendingSmoke = true;
+        if (point.jam) pendingJam = true;
         if (point.coin) pendingCoin = point.coin;
       } else {
         input = steered;
@@ -71,6 +82,10 @@ function walkRoute(world, route, seconds) {
     if (pendingSmoke) {
       input.smoke = true;
       pendingSmoke = false;
+    }
+    if (pendingJam) {
+      input.jam = true;
+      pendingJam = false;
     }
     if (pendingCoin) {
       input.coinTarget = pendingCoin;
@@ -87,7 +102,8 @@ function walkRoute(world, route, seconds) {
 export function stageShot(name, world) {
   world.reset();
   if (name !== 'play' && name !== 'escape' && name !== 'caught'
-    && name !== 'sneak' && name !== 'smoke' && name !== 'getaway') {
+    && name !== 'sneak' && name !== 'smoke' && name !== 'getaway'
+    && name !== 'spotted' && name !== 'vault') {
     for (let index = 0; index < START_SECONDS / STEP; index += 1) {
       world.step(STEP, idleInput(), true);
     }
@@ -163,6 +179,52 @@ export function stageShot(name, world) {
       { x: 900, y: 340, sneak: false },
       { x: 1180, y: 360, sneak: false },
     ], 20);
+    return { screen: world.state.status === 'caught' ? SCREEN_CAUGHT : SCREEN_PLAY, best: 0 };
+  }
+
+  if (name === 'spotted') {
+    // v3: the tense frame. The thief stands in the sweep of the north-west
+    // camera (64,64), out of every guard's reach, and lets the camera find
+    // them: the cyan cone goes hot red on the thief, the alarm climbs past
+    // 40 and turns amber. Stops the moment the alarm is high AND the camera
+    // is on the thief, so the frame shows the caught moment, not the calm
+    // after it. The alarm never nears 100 — the loop caps at 60.
+    walkRoute(world, [
+      { x: 150, y: 360, sneak: false },
+      { x: 150, y: 250, sneak: true },
+      { x: 217, y: 193, sneak: true },
+    ], 14);
+    for (let index = 0; index < 30 / STEP; index += 1) {
+      if (world.state.status !== 'playing') break;
+      const anyCamSees = world.state.cameras.some((camera) => camera.seesThief);
+      if ((world.state.alarm >= 40 && anyCamSees) || world.state.alarm >= 60) break;
+      world.step(STEP, { dx: 0, dy: 0, sneak: true, run: false, interact: false }, false);
+    }
+    return { screen: world.state.status === 'caught' ? SCREEN_CAUGHT : SCREEN_PLAY, best: 0 };
+  }
+
+  if (name === 'vault') {
+    // v3: Job 2, a different room. Enter the vault through the door gap,
+    // step to (1000,180) — where the vault camera is the nearest eye — jam
+    // it, then pick the Golden Idol's lock under its dark cone: the jammer's
+    // showcase and the game's second job in one frame. The jam lasts six
+    // seconds and the walk-plus-pick after it takes about five, so the
+    // camera is still dark when the lock opens.
+    world.loadLevel(1);
+    walkRoute(world, [
+      { x: 1100, y: 360, sneak: false },
+      { x: 1000, y: 360, sneak: false },
+      { x: 1020, y: 280, sneak: true },
+      { x: 1020, y: 250, sneak: true },
+      { x: 1000, y: 180, sneak: true, jam: true },
+      // (1044,150) is the case's west edge: the thief slides along the glass
+      // to 58 px from the Idol, close enough to pick (78) and grab (60).
+      { x: 1044, y: 150, sneak: true },
+    ], 16);
+    for (let index = 0; index < 4.6 / STEP; index += 1) {
+      if (world.state.status !== 'playing' || world.state.lootPicked) break;
+      world.step(STEP, { dx: 0, dy: 0, sneak: false, run: false, interact: true }, false);
+    }
     return { screen: world.state.status === 'caught' ? SCREEN_CAUGHT : SCREEN_PLAY, best: 0 };
   }
 

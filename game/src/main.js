@@ -8,8 +8,8 @@
 // sets window.__shotReady for a screenshot.
 import { BEST_KEY, STEP } from './config.js';
 import { makeRandom } from './random.js';
-import { createWorld, EVENT_CAUGHT, EVENT_LEVEL_CLEAR, EVENT_LOOT, EVENT_PICKED, EVENT_SPOTTED, EVENT_WIN } from './world.js';
-import { ACTION_CONFIRM, ACTION_PAUSE, ACTION_SMOKE, createInput } from './input.js';
+import { createWorld, EVENT_CAUGHT, EVENT_JAM, EVENT_LEVEL_CLEAR, EVENT_LOOT, EVENT_PICKED, EVENT_SPOTTED, EVENT_WIN } from './world.js';
+import { ACTION_CONFIRM, ACTION_JAM, ACTION_PAUSE, ACTION_SMOKE, createInput } from './input.js';
 import { createAudio } from './audio.js';
 import { createRenderer, SCREEN_CAUGHT, SCREEN_CLEAR, SCREEN_PAUSED, SCREEN_PLAY, SCREEN_TITLE, SCREEN_WIN } from './render.js';
 import { stageShot } from './shots.js';
@@ -126,12 +126,17 @@ function runGame() {
       interact: move.interact,
       coinTarget: screen === SCREEN_PLAY ? coinTarget : null,
       smoke: screen === SCREEN_PLAY && !!(frameActions & ACTION_SMOKE),
+      jam: screen === SCREEN_PLAY && !!(frameActions & ACTION_JAM),
     }, false);
     if (events & EVENT_LOOT) {
       audio.loot();
       announce('Loot secured. Reach the exit.');
     }
     if (events & EVENT_PICKED) audio.pick();
+    if (events & EVENT_JAM) {
+      audio.jam();
+      announce('Camera jammed — six seconds of dark.');
+    }
     if (events & EVENT_SPOTTED) {
       audio.spotted();
       announce('Spotted! Break line of sight — the alarm is climbing.');

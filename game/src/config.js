@@ -69,6 +69,15 @@ export const TOOLS = {
   vaultLockpickSeconds: 4,
 };
 
+/** The camera jammer (v3): one charge per job, jams the nearest camera in
+ * range for a few seconds. A jammed camera stops sweeping and cannot see the
+ * thief — the answer to a camera you cannot time your way past. */
+export const JAMMER = {
+  perLevel: 1,
+  seconds: 6,
+  range: 420,
+};
+
 export const PALETTE = {
   backdrop: '#0b0e16',
   // Gallery floor: dark walnut planks, not a flat checkerboard.
@@ -109,6 +118,11 @@ export const PALETTE = {
   camConeEdge: 'rgba(150, 215, 255, 0.5)',
   camConeHot: 'rgba(255, 70, 55, 0.40)',
   camConeHotEdge: 'rgba(255, 120, 100, 0.7)',
+  // A jammed camera (v3): its cone goes dark grey and still, so the blind
+  // eye reads as dead, never as a live camera.
+  jamCone: 'rgba(120, 128, 140, 0.16)',
+  jamConeEdge: 'rgba(160, 168, 180, 0.4)',
+  jammed: '#8a93a5',
   smoke: 'rgba(200, 205, 215, 0.35)',
   exit: '#3fae6a',
   exitGlow: 'rgba(63, 174, 106, 0.35)',

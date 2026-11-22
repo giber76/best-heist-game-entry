@@ -3,7 +3,7 @@
 // the tools (thrown coins, smoke bombs, the lockpick). step() advances one
 // fixed step and returns what happened as bit flags, so the caller can react
 // without the world knowing about screens or sound.
-import { ALARM, CAMERA, FIELD, GUARD, STEP, THIEF, TOOLS } from './config.js';
+import { ALARM, CAMERA, FIELD, GUARD, JAMMER, STEP, THIEF, TOOLS } from './config.js';
 import { LEVELS } from './levels.js';
 
 export const EVENT_LOOT = 1;
@@ -13,6 +13,7 @@ export const EVENT_LEVEL_CLEAR = 8;
 export const EVENT_WIN = 16;
 export const EVENT_SPOTTED = 32;
 export const EVENT_COIN = 64;
+export const EVENT_JAM = 128;
 
 export const MODE_PATROL = 'patrol';
 export const MODE_INVESTIGATE = 'investigate';
@@ -93,6 +94,7 @@ export function createWorld(random) {
     lockProgress: 0,
     coins: TOOLS.coinsPerLevel,
     smokes: TOOLS.smokePerLevel,
+    jammers: JAMMER.perLevel,
     thrownCoins: [],
     smokeClouds: [],
     score: 0,
@@ -158,6 +160,7 @@ export function createWorld(random) {
       speed: def.speed,
       angle: def.baseAngle,
       seesThief: false,
+      jammedUntil: 0,
     }));
     state.alarm = 0;
     state.alarmPeak = 0;
@@ -166,6 +169,7 @@ export function createWorld(random) {
     state.lockProgress = 0;
     state.coins = TOOLS.coinsPerLevel;
     state.smokes = TOOLS.smokePerLevel;
+    state.jammers = JAMMER.perLevel;
     state.thrownCoins = [];
     state.smokeClouds = [];
     state.levelElapsed = 0;
@@ -350,6 +354,27 @@ export function createWorld(random) {
       state.smokeClouds.push({ x: thief.x, y: thief.y, radius: TOOLS.smokeRadius, left: TOOLS.smokeSeconds });
       state.smokes -= 1;
     }
+    // The jammer (v3): one charge per job, jams the nearest camera in range
+    // for a few seconds. It only spends the charge when a camera is actually
+    // in range — pressing Q with no camera near does nothing, so the player
+    // never wastes their one charge on empty air.
+    if (input.jam && state.jammers > 0) {
+      let nearest = null;
+      let nearestDist = JAMMER.range;
+      for (const camera of state.cameras) {
+        const d = dist(thief.x, thief.y, camera.x, camera.y);
+        if (d <= nearestDist) {
+          nearest = camera;
+          nearestDist = d;
+        }
+      }
+      if (nearest) {
+        nearest.jammedUntil = state.levelElapsed + JAMMER.seconds;
+        nearest.seesThief = false;
+        state.jammers -= 1;
+        events |= EVENT_JAM;
+      }
+    }
     for (const cloud of state.smokeClouds) cloud.left -= dt;
     state.smokeClouds = state.smokeClouds.filter((cloud) => cloud.left > 0);
     for (const coin of state.thrownCoins) coin.left -= dt;
@@ -421,6 +446,11 @@ export function createWorld(random) {
         if (guard.seesThief) anySeen = true;
       }
       for (const camera of state.cameras) {
+        // A jammed camera freezes mid-sweep and cannot see the thief at all.
+        if (camera.jammedUntil > state.levelElapsed) {
+          camera.seesThief = false;
+          continue;
+        }
         camera.angle = camera.baseAngle + camera.sweep * Math.sin(state.levelElapsed * camera.speed);
         camera.seesThief = coneSees(camera.x, camera.y, camera.angle, CAMERA.range, CAMERA.coneHalfAngle);
         if (camera.seesThief) {

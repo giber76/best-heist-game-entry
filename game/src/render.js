@@ -345,6 +345,12 @@ export function createRenderer(canvas) {
 
   function drawCones(state) {
     for (const camera of state.cameras) {
+      // A jammed camera (v3) shows a dark, still cone — the dead eye reads
+      // as blind, never as a live camera.
+      if (camera.jammedUntil > state.levelElapsed) {
+        cone(camera.x, camera.y, camera.angle, 265, 0.44, PALETTE.jamCone, PALETTE.jamConeEdge);
+        continue;
+      }
       cone(camera.x, camera.y, camera.angle, 265, 0.44,
         camera.seesThief ? PALETTE.camConeHot : PALETTE.camCone,
         camera.seesThief ? PALETTE.camConeHotEdge : PALETTE.camConeEdge);
@@ -367,8 +373,10 @@ export function createRenderer(canvas) {
   }
 
   function drawPeople(state) {
-    // Cameras: wall-mounted housings with a lens and a red alert dot.
+    // Cameras: wall-mounted housings with a lens and a red alert dot. A
+    // jammed camera (v3) has a grey lens and a JAMMED tag, frozen mid-sweep.
     for (const camera of state.cameras) {
+      const jammed = camera.jammedUntil > state.levelElapsed;
       context.save();
       context.translate(camera.x, camera.y);
       context.rotate(camera.angle);
@@ -377,12 +385,16 @@ export function createRenderer(canvas) {
       context.strokeStyle = '#3a415c';
       context.lineWidth = 2;
       context.strokeRect(-4, -8, 18, 16);
-      context.fillStyle = camera.seesThief ? '#ff5a4e' : '#9fd8ff';
+      context.fillStyle = jammed ? PALETTE.jammed : camera.seesThief ? '#ff5a4e' : '#9fd8ff';
       context.beginPath();
       context.arc(14, 0, 5, 0, Math.PI * 2);
       context.fill();
       context.restore();
-      if (camera.seesThief) {
+      if (jammed) {
+        // Below the housing, not above: the top cameras sit under the HUD
+        // panel, so a tag above them would be covered.
+        text('JAMMED', camera.x, camera.y + 26, 11, PALETTE.jammed, 'center');
+      } else if (camera.seesThief) {
         context.fillStyle = '#ff5a4e';
         context.beginPath();
         context.arc(camera.x, camera.y - 16, 3 + Math.sin(state.elapsed * 8) * 1.5, 0, Math.PI * 2);
@@ -521,8 +533,8 @@ export function createRenderer(canvas) {
     text(objective, meterX + meterW / 2, 46, 13, state.lootTaken ? PALETTE.exit : PALETTE.goldBright, 'center', 'top');
     // Score and tools, right side.
     text('SCORE ' + (state.totalScore + state.score), FIELD.width - 20, 24, 19, PALETTE.text, 'right', 'top');
-    text('◉ coins ×' + state.coins + '   ☁ smoke ×' + state.smokes, FIELD.width - 20, 44, 13, PALETTE.muted, 'right', 'top');
-    text('WASD move · SHIFT sneak · E pick lock · CLICK throw coin · SPACE smoke · P pause',
+    text('◉ coins ×' + state.coins + '   ☁ smoke ×' + state.smokes + '   ⚡ jammer ×' + state.jammers, FIELD.width - 20, 44, 13, PALETTE.muted, 'right', 'top');
+    text('WASD move · SHIFT sneak · E pick lock · CLICK throw coin · SPACE smoke · Q jam camera · P pause',
       FIELD.width / 2, FIELD.height - 10, 12, PALETTE.muted, 'center', 'bottom');
   }
 
@@ -563,6 +575,7 @@ export function createRenderer(canvas) {
         'Read the patrols. Slip the vision cones. Mind the cameras.',
         'Hold E at a case to pick its lock — then run for the exit.',
         'Coins lure guards away. Smoke blinds every eye.',
+        'Q jams the nearest camera for six seconds — one charge per job.',
         'The alarm only falls while you stay unseen.',
         best > 0 ? 'Best score ' + best : '',
       ], 'Press Enter or click to start the heist');

@@ -6,9 +6,9 @@
 
 Midnight at the Marlowe — a top-down stealth heist game. Three jobs in one night: lift the Star Sapphire from the gallery, the Golden Idol from the vault, and the Marlowe Ledger from the rooftop, then vanish. Read the guard patrols, slip the vision cones, mind the sweeping cameras, pick the locks, and keep the alarm down — at 100 the museum locks down.
 
-## v2 — readable at a glance
+## v3 — a third tool, and the tense frame
 
-Round 1 graded the first entry in the bottom quintile, and the screenshots showed why: the thief was a near-black dot, the vision cones were flat washed-out wedges, the room was a bare checkerboard, and three of the four screenshots were text panels over a dimmed game. v2 redraws the look so every required element reads in one frame: a big gold-rimmed burglar with a soft glow, guard cones as warm amber light with a bright edge that fades with distance, camera cones in cool cyan so the two eyes are never confused, a walnut-plank gallery floor with a rug, wall paintings and a carpet runner, a large glowing gem in a glass case, and a lit EXIT doorway. The four screenshots are all gameplay frames now — the lockpick, a sneak past a patrol cone, a smoke bomb with a coin lure, and the getaway at the door. The rules did not change: only pixels.
+Round 2 graded v2 at #785 of 5,056 (score 447,581) — a huge jump from round 1's #3,348, but every screenshot still showed a calm game: the alarm meter at 0%, no guard ever investigating, and all four frames the same gallery. v3 adds the depth the judge's second criterion asks for and the tension its third asks for. A camera jammer (Q, one charge per job) kills the nearest camera for six seconds — its cone goes dark grey and still, the housing reads JAMMED — so a camera you cannot time your way past has an answer, at a cost. And the screenshots change: one frame is the tense moment (the thief caught in a sweeping cone, a guard investigating, the alarm amber and climbing), one is Job 2's vault, where the thief jams the vault camera and picks the Golden Idol under its dark cone. The lockpick cover and the getaway stay.
 
 ## Run it
 
@@ -16,7 +16,7 @@ Round 1 graded the first entry in the bottom quintile, and the screenshots showe
 node serve.ts
 ```
 
-Then open http://localhost:8080 — WASD/arrows to move, Shift to sneak, E to pick a lock, click to throw a coin and lure a guard, Space for a smoke bomb, P to pause.
+Then open http://localhost:8080 — WASD/arrows to move, Shift to sneak, E to pick a lock, click to throw a coin and lure a guard, Space for a smoke bomb, Q to jam the nearest camera, P to pause.
 
 ---
 

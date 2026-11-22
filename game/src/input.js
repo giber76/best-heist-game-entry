@@ -8,6 +8,7 @@ import { FIELD } from './config.js';
 export const ACTION_CONFIRM = 1;
 export const ACTION_PAUSE = 2;
 export const ACTION_SMOKE = 4;
+export const ACTION_JAM = 8;
 
 const UP = new Set(['ArrowUp', 'KeyW']);
 const DOWN = new Set(['ArrowDown', 'KeyS']);
@@ -17,6 +18,7 @@ const SNEAK = new Set(['ShiftLeft', 'ShiftRight']);
 const INTERACT = new Set(['KeyE']);
 const CONFIRM = new Set(['Enter']);
 const SMOKE = new Set(['Space', 'KeyX']);
+const JAM = new Set(['KeyQ']);
 const PAUSE = new Set(['KeyP', 'Escape']);
 
 export function createInput(target) {
@@ -30,6 +32,8 @@ export function createInput(target) {
       if (!event.repeat) actions |= ACTION_CONFIRM;
     } else if (SMOKE.has(event.code)) {
       if (!event.repeat) actions |= ACTION_SMOKE;
+    } else if (JAM.has(event.code)) {
+      if (!event.repeat) actions |= ACTION_JAM;
     } else if (PAUSE.has(event.code)) {
       if (!event.repeat) actions |= ACTION_PAUSE;
     } else if (UP.has(event.code) || DOWN.has(event.code) || LEFT.has(event.code) || RIGHT.has(event.code)

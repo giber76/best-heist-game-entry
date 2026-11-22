@@ -40,6 +40,10 @@ export function createAudio() {
     coin() {
       blip(1320, 0.12, 'sine', 0.12, 1760);
     },
+    jam() {
+      blip(660, 0.08, 'square', 0.08, 330);
+      setTimeout(() => blip(440, 0.12, 'square', 0.07, 220), 70);
+    },
     pick() {
       blip(880, 0.1, 'triangle', 0.1, 1174);
     },
