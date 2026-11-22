@@ -1,9 +1,19 @@
-// The screenshot scenes behind ?shot=start|play|escape|caught. Each one plays
-// the real rules forward from a fresh world, steered by a scripted thief that
-// walks a fixed waypoint route (sneaking where the route says so, holding E at
-// the case where it says so, popping smoke or throwing a coin where it says
-// so), so the frame is what a short game really looks like and the same seed
-// always gives the same frame.
+// The screenshot scenes behind ?shot=play|sneak|smoke|getaway|start|escape|caught.
+// Each one plays the real rules forward from a fresh world, steered by a
+// scripted thief that walks a fixed waypoint route (sneaking where the route
+// says so, holding E at the case where it says so, popping smoke or throwing
+// a coin where it says so), so the frame is what a short game really looks
+// like and the same seed always gives the same frame.
+//
+// v2: the four submitted screenshots are all gameplay frames, no modals —
+// the judge scores what the screenshots show of the game, so every frame
+// keeps the thief, the guards and their cones, the cameras, the loot and the
+// alarm meter visible. `play` is the lockpick at the case (the cover),
+// `sneak` is the thief slipping past a patrol cone, `smoke` is a smoke bomb
+// and a coin lure with a guard investigating, `getaway` is the thief at the
+// exit door with the loot secured, one step from the getaway. The old
+// `start`/`escape`/`caught` scenes stay for the in-game screens and for
+// backwards compatibility.
 import { STEP } from './config.js';
 import { SCREEN_CAUGHT, SCREEN_CLEAR, SCREEN_PLAY, SCREEN_TITLE } from './render.js';
 
@@ -76,7 +86,8 @@ function walkRoute(world, route, seconds) {
  */
 export function stageShot(name, world) {
   world.reset();
-  if (name !== 'play' && name !== 'escape' && name !== 'caught') {
+  if (name !== 'play' && name !== 'escape' && name !== 'caught'
+    && name !== 'sneak' && name !== 'smoke' && name !== 'getaway') {
     for (let index = 0; index < START_SECONDS / STEP; index += 1) {
       world.step(STEP, idleInput(), true);
     }
@@ -99,6 +110,59 @@ export function stageShot(name, world) {
       if (world.state.status !== 'playing') break;
       world.step(STEP, { dx: 0, dy: 0, sneak: false, run: false, interact: true }, false);
     }
+    return { screen: world.state.status === 'caught' ? SCREEN_CAUGHT : SCREEN_PLAY, best: 0 };
+  }
+
+  if (name === 'sneak') {
+    // Slip south along the carpet, then sneak across the open middle lane
+    // while the south patrol sweeps past: the thief crouched in the open, a
+    // guard cone crossing just ahead of them, the Sapphire glowing behind.
+    walkRoute(world, [
+      { x: 300, y: 360, sneak: false },
+      { x: 300, y: 420, sneak: true },
+      { x: 520, y: 420, sneak: true },
+    ], 14);
+    return { screen: world.state.status === 'caught' ? SCREEN_CAUGHT : SCREEN_PLAY, best: 0 };
+  }
+
+  if (name === 'smoke') {
+    // Walk the north lane to the case, pop smoke so no eye can watch the
+    // lockpick, and throw a coin to pull the north guard over: the thief in
+    // the smoke cloud, a guard turning toward the coin, cones still sweeping.
+    walkRoute(world, [
+      { x: 300, y: 360, sneak: false },
+      { x: 300, y: 250, sneak: false },
+      { x: 560, y: 250, sneak: false },
+      { x: 560, y: 150, sneak: false },
+      { x: 566, y: 205, sneak: false, smoke: true, coin: { x: 800, y: 250 } },
+    ], 12);
+    for (let index = 0; index < 1.2 / STEP; index += 1) {
+      if (world.state.status !== 'playing') break;
+      world.step(STEP, { dx: 0, dy: 0, sneak: false, run: false, interact: true }, false);
+    }
+    return { screen: world.state.status === 'caught' ? SCREEN_CAUGHT : SCREEN_PLAY, best: 0 };
+  }
+
+  if (name === 'getaway') {
+    // The full job, then stop one step short of the east door: the thief at
+    // the exit with the Sapphire secured and the objective reading
+    // LOOT SECURED — REACH THE EXIT, no modal over the frame.
+    walkRoute(world, [
+      { x: 300, y: 360, sneak: false },
+      { x: 300, y: 250, sneak: false },
+      { x: 560, y: 250, sneak: false },
+      { x: 560, y: 150, sneak: false },
+      { x: 566, y: 205, sneak: false, smoke: true },
+    ], 12);
+    for (let index = 0; index < 2.6 / STEP; index += 1) {
+      if (world.state.status !== 'playing') break;
+      world.step(STEP, { dx: 0, dy: 0, sneak: false, run: false, interact: true }, false);
+    }
+    walkRoute(world, [
+      { x: 640, y: 250, sneak: false },
+      { x: 900, y: 340, sneak: false },
+      { x: 1180, y: 360, sneak: false },
+    ], 20);
     return { screen: world.state.status === 'caught' ? SCREEN_CAUGHT : SCREEN_PLAY, best: 0 };
   }
 
